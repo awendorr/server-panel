@@ -1,4 +1,3 @@
-const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
@@ -6,9 +5,10 @@ const express = require('express');
 const multer = require('multer');
 const files = require('../services/fileService');
 const audit = require('../services/auditService');
+const config = require('../config');
 
 const router = express.Router();
-const MAX_UPLOAD_BYTES = (parseInt(process.env.MAX_UPLOAD_MB, 10) || 100) * 1024 * 1024;
+const MAX_UPLOAD_BYTES = config.maxUploadBytes;
 
 const str = (v) => (typeof v === 'string' ? v : undefined);
 
@@ -102,7 +102,15 @@ router.post('/upload', uploadTarget, (req, res, next) => {
         const original = Buffer.from(f.originalname, 'latin1').toString('utf8');
         const name = files.safeName(path.basename(original));
         const dest = path.join(req.uploadDir, name);
-        if (!overwrite && fs.existsSync(dest)) throw files.httpError(409, `"${name}" zaten var`);
+        const existing = await fsp.lstat(dest).catch(() => null);
+        if (existing && !overwrite) throw files.httpError(409, `"${name}" zaten var`);
+        if (existing) {
+          if (!existing.isFile()) throw files.httpError(409, `"${name}" bir dosya değil, üzerine yazılamaz`);
+          // Var olan dosyanın izinlerini ve sahibini koru (ör. 0600 bir .env herkese açık olmasın)
+          await fsp.chown(f.path, existing.uid, existing.gid)
+            .catch(() => fsp.chown(f.path, -1, existing.gid)).catch(() => {});
+          await fsp.chmod(f.path, existing.mode & 0o7777);
+        }
         await fsp.rename(f.path, dest);
         done.push({ name, size: f.size });
         audit.log(req, 'file.upload', { target: dest, details: { size: f.size, overwrite } });

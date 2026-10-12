@@ -18,7 +18,7 @@ const audit = require('./services/auditService');
 const alertService = require('./services/alertService');
 const rateLimit = require('./middleware/rateLimit');
 const { helmetMiddleware, csrfProtection } = require('./middleware/security');
-const { requireAuth, requireAuthPage } = require('./middleware/auth');
+const { isActive, requireAuth, requireAuthPage } = require('./middleware/auth');
 const { setupSockets } = require('./sockets');
 
 const PUBLIC = path.join(config.root, 'public');
@@ -56,7 +56,7 @@ app.use('/vendor/monaco', vendor('monaco-editor/min'));
 
 // Sayfalar
 app.get('/login', (req, res) => {
-  if (req.session.userId) return res.redirect('/');
+  if (isActive(req.session)) return res.redirect('/');
   res.sendFile(path.join(PUBLIC, 'login.html'));
 });
 app.get('/', requireAuthPage, (req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));

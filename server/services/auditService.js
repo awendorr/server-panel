@@ -13,8 +13,9 @@ function contextInfo(ctx) {
   const sess = req.session || {};
   let ip = req.ip;
   if (ctx.handshake) {
+    // Express'in 'trust proxy 1' ayarıyla aynı: en sağdaki adresi Nginx ekler, soldakiler istemcinin yazdığıdır
     const fwd = config.trustProxy && ctx.handshake.headers['x-forwarded-for'];
-    ip = fwd ? String(fwd).split(',')[0].trim() : ctx.handshake.address;
+    ip = fwd ? String(fwd).split(',').pop().trim() : ctx.handshake.address;
   }
   return { user_id: sess.userId || null, username: sess.username || null, ip: ip || null };
 }
@@ -51,6 +52,10 @@ function list({ limit = 100, before, action } = {}) {
 function cleanup() {
   const cutoff = Date.now() - config.auditRetentionDays * 86400 * 1000;
   db.prepare('DELETE FROM audit_log WHERE ts < ?').run(cutoff);
+  // Satır sınırı: kayıt seli diski dolduramasın
+  db.prepare(`DELETE FROM audit_log WHERE id <= (
+    SELECT id FROM audit_log ORDER BY id DESC LIMIT 1 OFFSET ?
+  )`).run(config.auditMaxRows);
 }
 
 module.exports = { log, list, cleanup };

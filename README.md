@@ -24,12 +24,16 @@ curl -fsSL https://raw.githubusercontent.com/awendorr/server-panel/main/get.sh |
 
 Bu komut:
 - Projeyi `~/server-panel` klasörüne indirir.
-- Node.js 18+ yoksa (Ubuntu/Debian'da) Node.js 22 ve derleme araçlarını kurmayı teklif eder.
+- Node.js 20+ yoksa (Ubuntu/Debian'da) Node.js 22 ve derleme araçlarını kurmayı teklif eder.
 - Paketleri kurar, rastgele `SESSION_SECRET` ile `.env` oluşturur, panel için kullanıcı adı ve şifre sorar.
 - Paneli pm2 ile başlatır, `pm2 save` yapar ve sunucu açılışında otomatik başlatmayı teklif eder.
 
 **Güncellemek** için aynı komutu tekrar çalıştırın; `.env`, kullanıcılar ve geçmiş veriler korunur.
-Farklı klasör için: `curl -fsSL .../get.sh | PANEL_DIR=/opt/server-panel bash`
+Farklı klasör için (yazma yetkiniz olan bir yer):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/awendorr/server-panel/main/get.sh | PANEL_DIR=$HOME/apps/server-panel bash
+```
 
 Panel güvenlik için yalnızca `127.0.0.1:7319` adresini dinler; internetten doğrudan erişilemez.
 
@@ -41,15 +45,21 @@ PowerShell'de:
 iwr -useb https://raw.githubusercontent.com/awendorr/server-panel/main/windows/kur.ps1 -OutFile $env:TEMP\panel-kur.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\panel-kur.ps1
 ```
 
-Sunucu adresini (`kullanici@ip`) ve portları sorar (varsayılan: sunucuda 7319, bilgisayarda 8282). Sonra:
+Sunucu adresini (`kullanici@ip`) ve portları sorar (varsayılan: SSH 22, sunucuda panel 7319, bilgisayarda 8282). SSH farklı bir portta ise `kullanici@ip:2222` de yazabilirsiniz. Sonra:
 - Bu iş için ayrı bir SSH anahtarı oluşturup sunucuya ekler. Sunucu şifreniz **bir kez** sorulur.
-  Anahtar sunucuda `restrict,permitopen="127.0.0.1:7319",command="/bin/true"` ile kısıtlanır: yalnızca panele tünel açabilir, komut çalıştıramaz.
+  Anahtar sunucuda `restrict,port-forwarding,permitopen="127.0.0.1:7319",permitlisten="127.0.0.1:1",command="/bin/true"` ile kısıtlanır: yalnızca panele tünel açabilir; komut çalıştıramaz, başka porta bağlanamaz, sunucuda port dinleyemez.
 - Windows açılışında görünmez pencerede başlayan, bağlantı koparsa kendini yeniden bağlayan bir SSH tüneli kurar (yönetici izni gerekmez).
 - Masaüstüne ve Başlat menüsüne **Sunucu Paneli** kısayolu ekler. Kısayol paneli Edge/Chrome'da ayrı bir uygulama penceresinde açar.
 
 Uyarılar sayfasındaki "Masaüstü bildirimlerini aç" ile uyarılar Windows bildirimi olarak gelir (uygulama penceresi açık ya da simge durumundayken).
 
-Kaldırmak için: `powershell -ExecutionPolicy Bypass -File $env:TEMP\panel-kur.ps1 -Uninstall`
+Ayarları (sunucu, portlar) değiştirmek için aynı komutu tekrar çalıştırın; önceki değerler varsayılan olarak gelir.
+
+Kaldırmak için:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File $env:LOCALAPPDATA\ServerPanel\kur.ps1 -Uninstall
+```
 
 ### Linux / macOS masaüstünden erişim
 
@@ -61,14 +71,14 @@ Pencere açık kaldığı sürece `http://localhost:8282` adresinden panele ula�
 
 ## Gereksinimler
 
-- Sunucu: Linux (Ubuntu/Debian test edildi), Node.js 18+ (kurulum betiği kurabilir), derleme araçları (`build-essential python3`)
+- Sunucu: Linux (Ubuntu/Debian test edildi), Node.js 20+ (Node.js 22 önerilir; kurulum betiği kurabilir), derleme araçları (`build-essential python3`)
 - (İsteğe bağlı) CPU sıcaklığı için: `sudo apt install -y lm-sensors`
 - Windows: Windows 10/11, yerleşik OpenSSH istemcisi, Edge veya Chrome
 
 ## Elle kurulum
 
 ```bash
-cd /opt/server-panel            # projeyi kopyaladığınız klasör
+cd ~/server-panel               # projeyi kopyaladığınız klasör
 npm install --omit=dev
 
 cp .env.example .env
@@ -81,7 +91,7 @@ chmod 600 .env
 npm run create-user -- admin
 ```
 
-Aynı komut var olan bir kullanıcının şifresini değiştirmek için de kullanılır.
+Aynı komut var olan bir kullanıcının şifresini değiştirmek için de kullanılır; şifre değişince o kullanıcının açık oturumları kapanır.
 
 ### Tarayıcı CSS'i
 
@@ -118,7 +128,7 @@ Panel, onu çalıştıran Linux kullanıcısının yetkileriyle çalışır:
 - **Terminal ve dosya yöneticisi** o kullanıcının yapabildiği her şeyi yapabilir. Root ile çalıştırmayın; `sudo` gerekiyorsa terminalden kullanın.
 - **PM2 sayfası** aynı kullanıcının pm2 süreçlerini gösterir (`~/.pm2`). Uygulamalarınızı hangi kullanıcıyla pm2'ye eklediyseniz paneli de o kullanıcıyla çalıştırın.
 - **Açık portlar** listesinde başka kullanıcılara ait süreçlerin adları görünmeyebilir (port yine listelenir).
-- Dosya yöneticisini tek bir klasörle sınırlamak için `.env` içinde `FILE_ROOT=/home/dave` gibi bir değer verin.
+- Dosya yöneticisini tek bir klasörle sınırlamak için `.env` içinde `FILE_ROOT=/home/kullanici` gibi bir değer verin.
 
 ## Erişim
 
@@ -158,7 +168,7 @@ server {
     ssl_certificate     /etc/letsencrypt/live/panel.ornek.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/panel.ornek.com/privkey.pem;
 
-    client_max_body_size 100m;   # dosya yükleme (4. aşama) için
+    client_max_body_size 100m;   # dosya yükleme için
 
     location / {
         proxy_pass http://127.0.0.1:7319;
@@ -187,7 +197,8 @@ Sertifika: `sudo certbot --nginx -d panel.ornek.com`. Ek güvenlik için Nginx't
 
 - Şifreler bcrypt (cost 12) ile saklanır, oturumlar SQLite'ta tutulur.
 - Cookie: `HttpOnly`, `SameSite=Strict`, HTTPS arkasında `Secure`.
-- Giriş denemesi sınırı: bir IP'den `LOGIN_WINDOW_MIN` dakikada `LOGIN_MAX_ATTEMPTS` hatalı deneme sonrası kilit.
+- Giriş denemesi sınırı: bir kullanıcı adı (ve SSH tüneli dışından gelen her IP) için `LOGIN_WINDOW_MIN` dakikada `LOGIN_MAX_ATTEMPTS` hatalı denemeden sonra her yeni deneme giderek artan bir bekleme ister (30 sn, 1 dk, 2 dk ...). Takılırsanız sunucuda `npm run unlock` beklemeyi sıfırlar.
+- Oturumlar `SESSION_TTL_HOURS` boyunca işlem yapılmazsa, her durumda da `SESSION_MAX_HOURS` (varsayılan 7 gün) sonunda kapanır.
 - Değişiklik yapan tüm API isteklerinde CSRF token kontrolü, sıkı Content-Security-Policy (helmet).
 - Socket.IO bağlantıları da oturum ve Origin kontrolünden geçer; çıkış yapınca açık soketler kapatılır.
 - Kritik işlemler `audit_log` tablosuna yazılır, panelde **Audit kaydı** sayfasından görülebilir.
@@ -216,7 +227,7 @@ server/
   routes/           REST API
   services/         metrik, pm2, terminal, dosya, sistem, uyarı, audit, oturum servisleri
   sockets/          Socket.IO kanalları
-  scripts/          create-user
+  scripts/          create-user, rename-user, unlock
 public/             Tek sayfa arayüz (Tailwind, Chart.js, xterm.js, Monaco)
 install.sh          Kurulum / güncelleme betiği
 get.sh              Tek komutla indirme + kurulum

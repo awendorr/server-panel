@@ -21,8 +21,12 @@ async function create(username, password) {
   const hash = await bcrypt.hash(password, BCRYPT_COST);
   const existing = findByUsername(username);
   if (existing) {
-    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, existing.id);
-    return { id: existing.id, updated: true };
+    // Şifre değişince açık oturumlar da kapanır (çalınmış bir cookie işe yaramasın)
+    const ended = db.transaction(() => {
+      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, existing.id);
+      return db.prepare("DELETE FROM sessions WHERE json_extract(sess, '$.userId') = ?").run(existing.id).changes;
+    })();
+    return { id: existing.id, updated: true, sessionsEnded: ended };
   }
   const r = db.prepare('INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)')
     .run(username, hash, Date.now());

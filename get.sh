@@ -3,7 +3,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/awendorr/server-panel/main/get.sh | bash
 #
 # Ayarlar (isteğe bağlı, ortam değişkeni olarak):
-#   PANEL_DIR   kurulacak klasör     (varsayılan: ~/server-panel)
+#   PANEL_DIR   kurulacak klasör     (varsayılan: ~/server-panel; yazma yetkiniz olan bir yer)
 #   PANEL_REPO  GitHub deposu        (varsayılan: awendorr/server-panel)
 #   PANEL_REF   dal ya da etiket      (varsayılan: main)
 set -euo pipefail
@@ -31,17 +31,20 @@ else
   die "curl ya da wget gerekli"
 fi
 
-mkdir -p "$DIR"
+mkdir -p "$DIR" 2>/dev/null || die "$DIR oluşturulamadı (yetki yok). Yazabildiğiniz bir klasör seçin, ör. PANEL_DIR=\$HOME/apps/server-panel"
 # .env ve data/ arşivde yok; güncellemede korunur
 tar -xzf "$TMP/panel.tar.gz" -C "$DIR" --strip-components=1
 chmod +x "$DIR/install.sh" "$DIR/get.sh" 2>/dev/null || true
+# exec'ten sonra EXIT trap'i çalışmaz; geçici dosyaları şimdi sil
+rm -rf "$TMP"
+trap - EXIT
 say "Dosyalar: $DIR"
 
 cd "$DIR"
 # curl | bash ile çalışırken sorular için klavyeyi bağla
 if [ -t 0 ]; then
   exec bash ./install.sh
-elif [ -r /dev/tty ]; then
+elif (exec </dev/tty) 2>/dev/null; then
   exec bash ./install.sh < /dev/tty
 else
   die "Etkileşimli terminal bulunamadı. Kurulumu bitirmek için: cd $DIR && bash install.sh"

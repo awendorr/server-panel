@@ -10,6 +10,28 @@ function defaultShell() {
   return process.env.SHELL || '/bin/bash';
 }
 
+// Kabuğa yalnızca normal bir girişte de olan değişkenler geçer. Panelin ve pm2'nin kendi
+// değişkenleri (SESSION_SECRET, PORT, NODE_ENV, pm_id ...) terminalden başlatılan uygulamalara
+// sızmasın. `-l` ile açılan kabuk gerisini /etc/profile ve ~/.profile'dan yükler.
+const PASS_ENV = new Set([
+  'HOME', 'USER', 'LOGNAME', 'SHELL', 'PATH', 'LANG', 'LANGUAGE', 'TZ', 'TMPDIR', 'MAIL',
+  'XDG_RUNTIME_DIR', 'DBUS_SESSION_BUS_ADDRESS', 'PM2_HOME',
+  'http_proxy', 'https_proxy', 'no_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY',
+]);
+
+function shellEnv() {
+  const env = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (PASS_ENV.has(k) || k.startsWith('LC_')) env[k] = v;
+  }
+  const me = os.userInfo();
+  env.HOME = env.HOME || me.homedir;
+  env.USER = env.USER || me.username;
+  env.LOGNAME = env.LOGNAME || me.username;
+  env.PATH = env.PATH || '/usr/local/bin:/usr/bin:/bin';
+  return env;
+}
+
 function clampSize(cols, rows) {
   const c = Number.isInteger(cols) ? Math.min(Math.max(cols, 20), 500) : 80;
   const r = Number.isInteger(rows) ? Math.min(Math.max(rows, 5), 200) : 24;
@@ -29,9 +51,7 @@ function open(socketId, { cols, rows }, onData, onExit) {
   const id = crypto.randomBytes(8).toString('hex');
   const shell = defaultShell();
 
-  // Panelin kendi gizli değişkenlerini kabuğa geçirme
-  const env = { ...process.env, TERM: 'xterm-256color', COLORTERM: 'truecolor' };
-  delete env.SESSION_SECRET;
+  const env = { ...shellEnv(), TERM: 'xterm-256color', COLORTERM: 'truecolor' };
 
   const proc = pty.spawn(shell, ['-l'], {
     name: 'xterm-256color',

@@ -1,5 +1,5 @@
 const { Server } = require('socket.io');
-const { socketAuth } = require('../middleware/auth');
+const { socketAuth, isActive } = require('../middleware/auth');
 const { sameOrigin } = require('../middleware/security');
 const metricsSocket = require('./metrics');
 const pm2Socket = require('./pm2');
@@ -37,7 +37,7 @@ function setupSockets(httpServer, sessionMiddleware) {
       const sess = socket.request.session;
       if (!sess) { socket.disconnect(true); continue; }
       sess.reload((err) => {
-        if (err || !socket.request.session || !socket.request.session.userId) socket.disconnect(true);
+        if (err || !isActive(socket.request.session)) socket.disconnect(true);
       });
     }
   }, SESSION_CHECK_MS).unref();

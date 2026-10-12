@@ -134,7 +134,8 @@ async function write(input, content, expectedMtime) {
   try {
     if (target.exists) {
       const st = await fsp.stat(dest);
-      await fsp.chown(tmp, st.uid, st.gid).catch(() => {});
+      await fsp.chown(tmp, st.uid, st.gid).catch(() => fsp.chown(tmp, -1, st.gid)).catch(() => {});
+      await fsp.chmod(tmp, mode);
     }
     await fsp.rename(tmp, dest);
   } catch (err) {
