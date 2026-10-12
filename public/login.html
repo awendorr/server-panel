@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="tr" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Giriş · Sunucu Paneli</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/css/tailwind.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="h-full bg-slate-950 text-slate-200 flex items-center justify-center px-4">
+  <main class="w-full max-w-sm">
+    <div class="mb-8 text-center">
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-3">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
+      </div>
+      <h1 class="text-xl font-semibold">Sunucu Paneli</h1>
+      <p class="text-sm text-slate-400 mt-1">Devam etmek için giriş yapın</p>
+    </div>
+
+    <form id="login-form" class="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-4" autocomplete="on">
+      <div>
+        <label for="username" class="block text-sm text-slate-400 mb-1">Kullanıcı adı</label>
+        <input id="username" name="username" autocomplete="username" required autofocus
+          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-emerald-500">
+      </div>
+      <div>
+        <label for="password" class="block text-sm text-slate-400 mb-1">Şifre</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required
+          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-emerald-500">
+      </div>
+      <p id="login-error" class="hidden text-sm text-rose-400" role="alert"></p>
+      <button id="login-btn" type="submit"
+        class="w-full rounded-lg bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50">
+        Giriş yap
+      </button>
+    </form>
+
+    <p id="no-users" class="hidden mt-4 text-sm text-amber-300 text-center">
+      Henüz kullanıcı yok. Sunucuda <code class="text-amber-200">npm run create-user -- admin</code> çalıştırın.
+    </p>
+  </main>
+  <script src="/js/login.js"></script>
+</body>
+</html>
